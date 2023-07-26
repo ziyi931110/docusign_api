@@ -1,0 +1,83 @@
+from docusign_esign import EnvelopesApi, EnvelopeDefinition, Document, Signer, SignHere, Tabs, Recipients,ApiClient
+from docusign_esign.client.api_exception import ApiException
+import base64
+
+# 读取 PDF 文件并进行 base64 编码
+with open("file_path", "rb") as file:
+    pdf_data = file.read()
+    base64_data = base64.b64encode(pdf_data).decode()
+
+print(base64_data)
+
+
+api_client = ApiClient(host="https://demo.docusign.net/restapi")
+api_client.set_default_header("Authorization","Bearer token")
+
+# 创建 Envelopes API 实例
+envelopes_api = EnvelopesApi(api_client)
+
+# 创建文档
+document = Document(
+    document_base64=base64_data,
+    name="Sample Document",
+    file_extension="pdf",
+    document_id="1"
+)
+
+# 创建第一个签名者
+signer1 = Signer(
+    email="email_1",
+    name="name_1",
+    recipient_id="1",
+    routing_order="1"
+)
+
+# 创建第一个签名者的签名区域
+sign_here1 = SignHere(
+    document_id="1",
+    page_number="1",
+    recipient_id="1",
+    x_position="100",
+    y_position="100"
+)
+
+# 将签名区域添加到第一个签名者的标签中
+signer1.tabs = Tabs(sign_here_tabs=[sign_here1])
+
+# 创建第二个签名者
+signer2 = Signer(
+    email="email_2",
+    name="name_2",
+    recipient_id="2",
+    routing_order="2"
+)
+
+# 创建第二个签名者的签名区域
+sign_here2 = SignHere(
+    document_id="1",
+    page_number="1",
+    recipient_id="2",
+    x_position="200",
+    y_position="200"
+)
+
+# 将签名区域添加到第二个签名者的标签中
+signer2.tabs = Tabs(sign_here_tabs=[sign_here2])
+
+# 创建收件人
+recipients = Recipients(signers=[signer1, signer2])
+
+# 创建信封定义
+envelope_definition = EnvelopeDefinition(
+    email_subject="Please sign this document",
+    documents=[document],
+    recipients=recipients,
+    status="sent"
+)
+
+# 创建并发送信封
+try:
+    envelope_summary = envelopes_api.create_envelope("accound_id", envelope_definition=envelope_definition)
+    print(f"Envelope was created. ID: {envelope_summary.envelope_id}, status: {envelope_summary.status}")
+except ApiException as e:
+    print(f"Error: {e}")
